@@ -119,7 +119,7 @@ export function MarketView({ market }: { market: MarketSnapshot }) {
                   </td>
                   <td className="r">
                     <span style={{ display: "inline-block" }}>
-                      <Sparkline values={dailySeries[q.key].slice(-n)} color="var(--ink-2)" width={90} height={28} />
+                      <Sparkline values={(market.history?.[q.key]?.values ?? dailySeries[q.key]).slice(-n)} color="var(--ink-2)" width={90} height={28} />
                     </span>
                   </td>
                 </tr>

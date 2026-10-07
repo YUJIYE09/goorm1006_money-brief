@@ -12,8 +12,9 @@ import type { MarketQuote } from "@/lib/types";
 const quoteValue = (q: MarketQuote) => (q.unit === "%" ? `${fmt(q.value)}%` : fmt(q.value));
 const quoteChange = (q: MarketQuote) => (q.unit === "%" ? `${fmt(Math.abs(q.change))}%p` : q.unit === "원" ? fmt(Math.abs(q.change)) : `${Math.abs(q.changePct).toFixed(2)}%`);
 
-export default function HomePage() {
-  const home = getHome();
+export default async function HomePage() {
+  const home = await getHome();
+  const live = home.market.live;
   const q = Object.fromEntries(home.market.quotes.map((x) => [x.key, x]));
   const kospi = q.kospi;
   const side = [q.usdkrw, q.ktb3y, q.spx];
@@ -24,7 +25,7 @@ export default function HomePage() {
   return (
     <>
       <div className="eyebrow">
-        <span className="chip">오늘의 지면</span>10월 7일 수요일 · 예시 데이터
+        <span className="chip">오늘의 지면</span>10월 7일 수요일 · {live.ecos ? "환율·금리는 ECOS 실데이터, 나머지는 예시" : "예시 데이터"}
       </div>
       <h1 className="page-title">반도체가 끌어올린 하루, 코스피 3,500선 위로</h1>
       <p className="page-dek">삼성전자 실적이 예상을 넘으면서 반도체 업종이 지수를 이끌었습니다. 오늘 시장을 숫자와 그래픽으로 정리했습니다.</p>
@@ -53,7 +54,7 @@ export default function HomePage() {
               <span className="lbl">{s.name}</span>
               <span className="val">{quoteValue(s)}</span>
               <span className="spark">
-                <Sparkline values={dailySeries[s.key].slice(-30)} color={s.change >= 0 ? "var(--up)" : "var(--down)"} />
+                <Sparkline values={(home.market.history?.[s.key]?.values ?? dailySeries[s.key]).slice(-30)} color={s.change >= 0 ? "var(--up)" : "var(--down)"} />
               </span>
               <span className={`chg ${dir(s.change)}`}>
                 {arrow(s.change)} {quoteChange(s)}
@@ -114,6 +115,24 @@ export default function HomePage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="sec">
+        <div className="sec-h">
+          <h2>최신 공시</h2>
+          <span className="aside">{live.dart ? "오픈다트 실데이터 · 상장사 거래소 공시" : "예시 공시 · 오픈다트 연결 전"}</span>
+        </div>
+        <div className="list-news">
+          {home.disclosures.map((d) => (
+            <a key={d.receiptNo} href={d.url} target="_blank" rel="noopener noreferrer" className="list-item">
+              <h3>
+                {d.isEarnings && <span className="today-tag" style={{ marginRight: 8 }}>실적</span>}
+                {d.corpName} · {d.title}
+              </h3>
+              <span className="meta">{d.receiptDate.slice(5).replace("-", ".")} ↗</span>
+            </a>
+          ))}
+        </div>
       </section>
 
       <section className="sec">

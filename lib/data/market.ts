@@ -35,6 +35,7 @@ export const marketSnapshot: MarketSnapshot = {
     { investor: "개인", amount: -1650 },
     { investor: "기타법인", amount: -80 },
   ],
+  live: { ecos: false, dart: false },
 };
 
 /** 상단 티커에만 쓰는 추가 시세 */

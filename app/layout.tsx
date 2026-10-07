@@ -24,8 +24,8 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const market = getMarket();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const market = await getMarket();
   return (
     <html lang="ko" className={`${gothic.variable} ${archivo.variable}`}>
       <body>

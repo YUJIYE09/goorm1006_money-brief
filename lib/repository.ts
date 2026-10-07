@@ -1,10 +1,13 @@
 // 데이터 접근 계층. 지금은 예시 데이터를 읽지만, 나중에 FastAPI 백엔드 호출로 바꿔도
 // 화면과 API 라우트는 이 함수들만 쓰므로 그대로 둘 수 있다.
 import { articles } from "./data/articles";
+import { sampleDisclosures } from "./data/disclosures";
+import { ECOS_SERIES, fetchEcosDaily, type EcosKey } from "./sources/ecos";
+import { fetchDisclosures } from "./sources/opendart";
 import { morningBrief } from "./data/brief";
 import { events } from "./data/events";
 import { marketSnapshot } from "./data/market";
-import type { Article, CalendarEvent, HomePayload, MorningBrief } from "./types";
+import type { Article, CalendarEvent, Disclosure, HomePayload, MarketQuote, MarketSnapshot, MorningBrief } from "./types";
 
 /** 편집자 승인 + 발행 상태인 기사만 공개한다 (명세서 5.1, 13장 원칙). */
 export function isPublic(a: Pick<Article, "editor_approved" | "status">) {
@@ -33,8 +36,42 @@ export function getMorningBrief(): MorningBrief | undefined {
   return morningBrief.editor_approved ? morningBrief : undefined;
 }
 
-export function getMarket() {
+/** 예시 스냅샷 (실데이터가 없을 때의 기본값) */
+export function getSampleMarket(): MarketSnapshot {
   return marketSnapshot;
+}
+
+/**
+ * 시장 데이터. ECOS 키가 있으면 원/달러·국고채 금리를 실데이터로 바꾼다.
+ * 키가 없거나 조회가 실패한 항목은 예시 값을 그대로 둔다.
+ */
+export async function getMarket(): Promise<MarketSnapshot> {
+  const keysToLoad = Object.keys(ECOS_SERIES) as EcosKey[];
+  const results = await Promise.all(keysToLoad.map((k) => fetchEcosDaily(k)));
+  const history: MarketSnapshot["history"] = {};
+  let quotes: MarketQuote[] = marketSnapshot.quotes;
+  let asOf = marketSnapshot.asOf;
+
+  results.forEach((r, i) => {
+    const key = keysToLoad[i];
+    if (!r || r.values.length < 2) return;
+    history[key] = { labels: r.labels, values: r.values };
+    const last = r.values[r.values.length - 1];
+    const prev = r.values[r.values.length - 2];
+    quotes = quotes.map((q) =>
+      q.key === key ? { ...q, value: last, change: +(last - prev).toFixed(3), changePct: +(((last - prev) / prev) * 100).toFixed(2) } : q,
+    );
+    asOf = `${r.dates[r.dates.length - 1]}T00:00:00+09:00`;
+  });
+
+  const ecosLive = Object.keys(history).length > 0;
+  return { ...marketSnapshot, quotes, asOf: ecosLive ? asOf : marketSnapshot.asOf, history: ecosLive ? history : undefined, live: { ecos: ecosLive, dart: false } };
+}
+
+/** 최근 상장사 공시. 오픈다트 키가 없거나 실패하면 예시 공시 */
+export async function getDisclosures(limit = 8): Promise<{ items: Disclosure[]; live: boolean }> {
+  const live = await fetchDisclosures({ limit });
+  return live ? { items: live, live: true } : { items: sampleDisclosures.slice(0, limit), live: false };
 }
 
 // "종일" 일정은 그날 맨 앞에 둔다
@@ -56,11 +93,13 @@ export function searchArticles(q: string): Article[] {
   });
 }
 
-export function getHome(): HomePayload {
+export async function getHome(): Promise<HomePayload> {
   const brief = getMorningBrief();
+  const [market, disclosures] = await Promise.all([getMarket(), getDisclosures(6)]);
   return {
     date: "2026-10-07",
-    market: getMarket(),
+    market: { ...market, live: { ...market.live, dart: disclosures.live } },
+    disclosures: disclosures.items,
     top_news: getPublishedArticles().slice(0, 5),
     calendar: getCalendar({ from: "2026-10-05", to: "2026-10-09" }),
     morning_brief: brief!,
