@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const [market, disclosures] = await Promise.all([getMarket(), getDisclosures(1)]);
   return NextResponse.json({
-    ecos: { keySet: Boolean(keys.ecos), live: market.live.ecos, series: Object.keys(market.history ?? {}), asOf: market.asOf },
+    ecos: { keySet: Boolean(keys.ecos), live: market.live.ecos, series: Object.keys(market.history ?? {}).filter((k) => k !== "kospi"), asOf: market.asOf },
+    krx: { keySet: Boolean(keys.krx), live: market.live.krx, sectors: market.sectorsAsOf ? market.sectors.length : 0, kospi: market.live.krx ? market.quotes.find((q) => q.key === "kospi")?.value : null },
     opendart: { keySet: Boolean(keys.opendart), live: disclosures.live, sample: disclosures.items[0]?.title ?? null },
   });
 }

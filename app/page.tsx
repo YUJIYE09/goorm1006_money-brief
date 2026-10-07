@@ -25,7 +25,7 @@ export default async function HomePage() {
   return (
     <>
       <div className="eyebrow">
-        <span className="chip">오늘의 지면</span>10월 7일 수요일 · {live.ecos ? "환율·금리는 ECOS 실데이터, 나머지는 예시" : "예시 데이터"}
+        <span className="chip">오늘의 지면</span>10월 7일 수요일 · {[live.krx && "지수·업종 KRX", live.ecos && "환율·금리 ECOS", live.dart && "공시 오픈다트"].filter(Boolean).join(", ") || "예시 데이터"}{(live.krx || live.ecos || live.dart) && " 실데이터"}
       </div>
       <h1 className="page-title">반도체가 끌어올린 하루, 코스피 3,500선 위로</h1>
       <p className="page-dek">삼성전자 실적이 예상을 넘으면서 반도체 업종이 지수를 이끌었습니다. 오늘 시장을 숫자와 그래픽으로 정리했습니다.</p>
@@ -34,19 +34,23 @@ export default async function HomePage() {
         <div className="card hero-main">
           <div className="hero-top">
             <div>
-              <div className="eyebrow">코스피 · 종가</div>
+              <div className="eyebrow">코스피 · {live.krx ? `${home.market.asOf.slice(5, 10).replace("-", ".")} 종가` : "종가"}</div>
               <div className="big">{fmt(kospi.value)}</div>
               <div className="big-sub">
                 <span className={`pill ${dir(kospi.change)}`}>
                   {arrow(kospi.change)} {fmt(Math.abs(kospi.change))} {signed(kospi.changePct, 2, "%")}
                 </span>
-                <span>전일 {fmt(KOSPI_PREV_CLOSE)}</span>
+                <span>전일 {fmt(live.krx ? kospi.value - kospi.change : KOSPI_PREV_CLOSE)}</span>
               </div>
             </div>
-            <span className="example">예시 수치</span>
+            {!live.krx && <span className="example">예시 수치</span>}
           </div>
-          <IntradayChart />
-          <p className="src">5분 단위, 09:00–15:30 · 점선은 전일 종가 · 출처 KRX</p>
+          <IntradayChart daily={live.krx ? home.market.history?.kospi : undefined} />
+          <p className="src">
+            {live.krx
+              ? `최근 ${home.market.history?.kospi?.values.length ?? 0}영업일 종가 · 기준 ${home.market.asOf.slice(0, 10)} · 출처 KRX`
+              : "5분 단위, 09:00–15:30 · 점선은 전일 종가 · 예시 수치"}
+          </p>
         </div>
         <div className="hero-side">
           {side.map((s) => (
@@ -82,7 +86,9 @@ export default async function HomePage() {
       <section className="sec">
         <div className="sec-h">
           <h2>업종 지도</h2>
-          <span className="aside">크기는 시가총액, 색은 등락률</span>
+          <span className="aside">
+            크기는 시가총액, 색은 등락률 · {home.market.sectorsAsOf ? `KRX 업종지수 ${home.market.sectorsAsOf}` : "예시 데이터"}
+          </span>
         </div>
         <div className="card">
           <Treemap sectors={home.market.sectors} />

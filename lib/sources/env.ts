@@ -4,6 +4,7 @@ import "server-only";
 export const keys = {
   opendart: process.env.OPENDART_API_KEY?.trim() || "",
   ecos: process.env.ECOS_API_KEY?.trim() || "",
+  krx: process.env.KRX_API_KEY?.trim() || "",
 };
 
 /** 같은 데이터를 여러 화면이 쓰므로 10분 동안 캐시한다 */

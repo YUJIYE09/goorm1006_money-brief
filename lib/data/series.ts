@@ -42,6 +42,7 @@ const N = 250;
 
 export const dailySeries: Record<SeriesKey, number[]> = {
   kospi: round(landAt(walk(N, 2720, 0.009, 7, 0.0011), 3512.4), 2),
+  kosdaq: round(landAt(walk(N, 760, 0.011, 17, 0.0005), 871.15), 2),
   spx: round(landAt(walk(N, 5900, 0.007, 23, 0.0005), 6742.1), 2),
   nikkei: round(landAt(walk(N, 39500, 0.01, 41, 0.0006), 46210.3), 2),
   usdkrw: round(landAt(walk(N, 1330, 0.003, 5), 1384.5), 2),

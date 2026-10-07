@@ -5,6 +5,7 @@ export const marketSnapshot: MarketSnapshot = {
   asOf: "2026-10-07T15:30:00+09:00",
   quotes: [
     { key: "kospi", name: "코스피", value: 3512.4, unit: "pt", change: 27.86, changePct: 0.8 },
+    { key: "kosdaq", name: "코스닥", value: 871.15, unit: "pt", change: -3.02, changePct: -0.35 },
     { key: "spx", name: "S&P 500", value: 6742.1, unit: "pt", change: 28.2, changePct: 0.42 },
     { key: "nikkei", name: "닛케이 225", value: 46210.3, unit: "pt", change: -129.8, changePct: -0.28 },
     { key: "usdkrw", name: "원/달러", value: 1384.5, unit: "원", change: 4.2, changePct: 0.3 },
@@ -35,12 +36,11 @@ export const marketSnapshot: MarketSnapshot = {
     { investor: "개인", amount: -1650 },
     { investor: "기타법인", amount: -80 },
   ],
-  live: { ecos: false, dart: false },
+  live: { ecos: false, dart: false, krx: false },
 };
 
 /** 상단 티커에만 쓰는 추가 시세 */
 export const tickerExtras = [
-  { name: "코스닥", value: "871.15", changePct: -0.35 },
   { name: "나스닥", value: "22,914.6", changePct: 0.61 },
   { name: "WTI", value: "$61.88", changePct: -1.1 },
   { name: "금", value: "$3,962", changePct: 0.54 },

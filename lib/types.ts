@@ -106,7 +106,7 @@ export type CardGraphic =
   | { kind: "spark"; label: string; seriesKey: SeriesKey; unit: string }
   | { kind: "range"; label: string; low: number; high: number; current: number };
 
-export type SeriesKey = "kospi" | "spx" | "nikkei" | "usdkrw" | "ktb3y" | "ktb10y" | "ust10y";
+export type SeriesKey = "kospi" | "kosdaq" | "spx" | "nikkei" | "usdkrw" | "ktb3y" | "ktb10y" | "ust10y";
 
 export interface MarketQuote {
   key: SeriesKey;
@@ -172,7 +172,9 @@ export interface MarketSnapshot {
   /** 실데이터로 받은 일별 시계열 (오래된 순). 없으면 화면은 예시 시계열을 쓴다 */
   history?: Partial<Record<SeriesKey, { labels: string[]; values: number[] }>>;
   /** 어떤 출처가 실데이터로 채워졌는지 */
-  live: { ecos: boolean; dart: boolean };
+  live: { ecos: boolean; dart: boolean; krx: boolean };
+  /** KRX 업종 지도 기준일 (실데이터일 때) */
+  sectorsAsOf?: string;
 }
 
 /** 오픈다트 공시 한 건 */

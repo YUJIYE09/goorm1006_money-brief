@@ -3,6 +3,7 @@
 import { articles } from "./data/articles";
 import { sampleDisclosures } from "./data/disclosures";
 import { ECOS_SERIES, fetchEcosDaily, type EcosKey } from "./sources/ecos";
+import { fetchKrxDaily } from "./sources/krx";
 import { fetchDisclosures } from "./sources/opendart";
 import { morningBrief } from "./data/brief";
 import { events } from "./data/events";
@@ -42,12 +43,14 @@ export function getSampleMarket(): MarketSnapshot {
 }
 
 /**
- * 시장 데이터. ECOS 키가 있으면 원/달러·국고채 금리를 실데이터로 바꾼다.
+ * 시장 데이터. 키가 있는 출처부터 실데이터로 바꾼다.
+ * - ECOS: 원/달러, 국고채 3년·10년
+ * - KRX: 코스피·코스닥 종가, 코스피 업종 지도, 코스피 최근 종가 흐름
  * 키가 없거나 조회가 실패한 항목은 예시 값을 그대로 둔다.
  */
 export async function getMarket(): Promise<MarketSnapshot> {
   const keysToLoad = Object.keys(ECOS_SERIES) as EcosKey[];
-  const results = await Promise.all(keysToLoad.map((k) => fetchEcosDaily(k)));
+  const [results, krx] = await Promise.all([Promise.all(keysToLoad.map((k) => fetchEcosDaily(k))), fetchKrxDaily()]);
   const history: MarketSnapshot["history"] = {};
   let quotes: MarketQuote[] = marketSnapshot.quotes;
   let asOf = marketSnapshot.asOf;
@@ -65,7 +68,23 @@ export async function getMarket(): Promise<MarketSnapshot> {
   });
 
   const ecosLive = Object.keys(history).length > 0;
-  return { ...marketSnapshot, quotes, asOf: ecosLive ? asOf : marketSnapshot.asOf, history: ecosLive ? history : undefined, live: { ecos: ecosLive, dart: false } };
+  let sectors = marketSnapshot.sectors;
+  if (krx) {
+    quotes = quotes.map((q) => (q.key === "kospi" ? { ...q, ...krx.kospi } : q.key === "kosdaq" && krx.kosdaq ? { ...q, ...krx.kosdaq } : q));
+    if (krx.sectors.length >= 4) sectors = krx.sectors;
+    if (krx.kospiHistory.values.length >= 2) history.kospi = krx.kospiHistory;
+    asOf = `${krx.date}T15:30:00+09:00`;
+  }
+  const anyLive = ecosLive || Boolean(krx);
+  return {
+    ...marketSnapshot,
+    quotes,
+    sectors,
+    sectorsAsOf: krx && sectors !== marketSnapshot.sectors ? krx.date : undefined,
+    asOf: anyLive ? asOf : marketSnapshot.asOf,
+    history: Object.keys(history).length ? history : undefined,
+    live: { ecos: ecosLive, dart: false, krx: Boolean(krx) },
+  };
 }
 
 /** 최근 상장사 공시. 오픈다트 키가 없거나 실패하면 예시 공시 */
